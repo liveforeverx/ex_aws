@@ -30,6 +30,8 @@ defmodule ExAws.Request do
       safe_url = ExAws.Request.Url.sanitize(url, service)
 
       if config[:debug_requests] do
+        Logger.debug("ExAws: Config: #{inspect(config)}")
+
         Logger.debug(
           "ExAws: Request URL: #{inspect(safe_url)} HEADERS: #{inspect(full_headers)} BODY: #{inspect(req_body)} ATTEMPT: #{attempt}"
         )
@@ -37,6 +39,7 @@ defmodule ExAws.Request do
 
       case do_request(config, method, safe_url, req_body, full_headers, attempt, service) do
         {:ok, %{status_code: status} = resp} when status in 200..299 or status == 304 ->
+          Logger.debug("ExAws: Response: #{inspect(resp)}")
           {:ok, resp}
 
         {:ok, %{status_code: status} = _resp} when status == 301 ->
@@ -44,6 +47,8 @@ defmodule ExAws.Request do
           {:error, {:http_error, status, "redirected"}}
 
         {:ok, %{status_code: status} = resp} when status in 400..499 ->
+          Logger.debug("ExAws: Response: #{inspect(resp)}")
+
           case client_error(resp, config[:json_codec]) do
             {:retry, reason} ->
               request_and_retry(
